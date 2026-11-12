@@ -94,7 +94,7 @@ function newOrder() {
     "=", fact.missing === "product" ? "?" : fact.product];
   $("problem").textContent = equation.join(" ");
   makeCookies();
-  renderModel(level <= 2);
+  renderModel(false);
   choices.replaceChildren(...fact.options.map(value => {
     const button = document.createElement("button");
     button.type = "button";
