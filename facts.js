@@ -2,7 +2,7 @@ const tables = [1, 2, 5, 10, 3, 4, 6, 7, 8, 9];
 
 export function orderSize(level) {
   if (level <= 9) return 4 + Math.ceil(level / 2);
-  return 9 + Math.floor(Math.sqrt(level - 9) * 2);
+  return level + 1;
 }
 
 export function shuffle(values, random = Math.random) {

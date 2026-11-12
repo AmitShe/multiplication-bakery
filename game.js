@@ -1,4 +1,4 @@
-import { makeFact, orderSize } from "./facts.js";
+import { makeFact, orderSize } from "./facts.js?v=2";
 import { makeSound } from "./sound.js";
 
 const $ = id => document.getElementById(id);
@@ -13,13 +13,17 @@ let saved = {};
 try { saved = JSON.parse(localStorage.getItem(key)) || {}; } catch {}
 let level = Number.isSafeInteger(saved.level) && saved.level >= 1 ? saved.level : 1;
 const mistakes = Object.assign(Object.create(null), saved.mistakes);
-let solved = 0;
+let solved = Number.isSafeInteger(saved.solved) && saved.solved >= 0 && saved.solved < orderSize(level)
+  ? saved.solved
+  : 0;
 let previous;
 let fact;
 let locked = false;
 
 function save(next = level) {
-  try { localStorage.setItem(key, JSON.stringify({ level: next, mistakes })); } catch {}
+  try {
+    localStorage.setItem(key, JSON.stringify({ level: next, solved: next === level ? solved : 0, mistakes }));
+  } catch {}
 }
 
 function progress() {
