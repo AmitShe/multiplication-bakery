@@ -1,5 +1,5 @@
 import { makeFact, orderSize } from "./facts.js?v=2";
-import { makeSound } from "./sound.js";
+import { makeSound } from "./sound.js?v=3";
 
 const $ = id => document.getElementById(id);
 const key = "multiplication-bakery:progress";
@@ -8,6 +8,14 @@ const hint = $("hint");
 const model = $("model");
 const choices = $("choices");
 const feedback = $("feedback");
+const workbench = document.querySelector(".workbench");
+const reset = $("reset-dialog");
+const recipes = ["chip", "lemon", "berry", "jam"];
+const layouts = [
+  { id: "tray", title: "מגש האפייה", unit: "שורה", groups: "שורות" },
+  { id: "boxes", title: "קופסאות למשלוח", unit: "קופסה", groups: "קופסאות" },
+  { id: "shelves", title: "מדפי הוויטרינה", unit: "מדף", groups: "מדפים" }
+];
 
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem(key)) || {}; } catch {}
@@ -19,6 +27,8 @@ let solved = Number.isSafeInteger(saved.solved) && saved.solved >= 0 && saved.so
 let previous;
 let fact;
 let locked = false;
+let advanceTimer;
+let flavor = 0;
 
 function save(next = level) {
   try {
@@ -41,28 +51,44 @@ function renderModel(visible) {
 }
 
 function makeCookies() {
+  const layout = layouts[(level - 1 + solved) % layouts.length];
+  const shape = recipes[flavor];
+  const label = document.createElement("p");
+  label.className = "model-title";
+  label.textContent = layout.title;
+  model.dataset.layout = layout.id;
+
   const grid = document.createElement("div");
   grid.className = "cookie-grid";
-  grid.style.setProperty("--columns", fact.b);
+  grid.style.setProperty("--columns", layout.id === "boxes" ? Math.min(5, fact.b) : fact.b);
   grid.setAttribute("aria-hidden", "true");
-  for (let index = 0; index < fact.product; index++) {
-    const cookie = document.createElement("span");
-    cookie.className = "cookie";
-    cookie.textContent = "✦";
-    grid.append(cookie);
+  for (let group = 0; group < fact.a; group++) {
+    const row = document.createElement("div");
+    row.className = "cookie-group";
+    for (let index = 0; index < fact.b; index++) {
+      const cookie = document.createElement("img");
+      cookie.className = "cookie";
+      cookie.src = "assets/cookie-" + shape + ".webp";
+      cookie.alt = "";
+      cookie.draggable = false;
+      row.append(cookie);
+    }
+    grid.append(row);
   }
   const caption = document.createElement("p");
   caption.className = "cookie-caption";
-  caption.textContent = fact.missing === "a" ? "ספרו כמה שורות יש במגש."
-    : fact.missing === "b" ? "ספרו כמה עוגיות יש בכל שורה."
-    : fact.a + " שורות, " + fact.b + " עוגיות בכל שורה";
-  model.replaceChildren(grid, caption);
+  caption.textContent = fact.missing === "a" ? "ספרו כמה " + layout.groups + " יש."
+    : fact.missing === "b" ? "ספרו כמה עוגיות יש בכל " + layout.unit + "."
+    : fact.a + " " + layout.groups + ", " + fact.b + " עוגיות בכל " + layout.unit;
+  model.replaceChildren(label, grid, caption);
 }
 
 function newOrder() {
   fact = makeFact(level, solved, previous, mistakes);
   previous = fact.key;
   locked = false;
+  flavor = (level - 1 + solved) % recipes.length;
+  workbench.dataset.flavor = recipes[flavor];
   feedback.textContent = "";
   const equation = [fact.missing === "a" ? "?" : fact.a, "×", fact.missing === "b" ? "?" : fact.b,
     "=", fact.missing === "product" ? "?" : fact.product];
@@ -87,7 +113,7 @@ function choose(value, button) {
     button.classList.add("wrong");
     button.setAttribute("aria-disabled", "true");
     feedback.textContent = "נסו תשובה אחרת. העוגיות יכולות לעזור.";
-    play([330, 294], .055);
+    play("retry");
     return;
   }
 
@@ -99,10 +125,10 @@ function choose(value, button) {
   button.classList.add("correct");
   for (const option of choices.children) option.setAttribute("aria-disabled", "true");
   feedback.textContent = "נכון! " + fact.a + " כפול " + fact.b + " שווה " + fact.product;
-  play([523, 659, 784], .07);
   const complete = solved === orderSize(level);
+  play(complete ? "ready" : "correct", flavor);
   save(complete ? level + 1 : level);
-  setTimeout(() => {
+  advanceTimer = setTimeout(() => {
     if (complete) {
       $("order").hidden = true;
       $("ready").hidden = false;
@@ -115,7 +141,28 @@ function choose(value, button) {
   }, 620);
 }
 
-hint.addEventListener("click", () => renderModel(model.hidden));
+hint.addEventListener("click", () => {
+  renderModel(model.hidden);
+  play("paper");
+});
+
+$("restart").addEventListener("click", () => {
+  reset.returnValue = "";
+  reset.showModal();
+});
+reset.addEventListener("close", () => {
+  if (reset.returnValue !== "restart") return;
+  clearTimeout(advanceTimer);
+  level = 1;
+  solved = 0;
+  previous = undefined;
+  for (const key of Object.keys(mistakes)) delete mistakes[key];
+  save();
+  $("ready").hidden = true;
+  $("order").hidden = false;
+  progress();
+  newOrder();
+});
 $("next").addEventListener("click", () => {
   level++;
   solved = 0;
