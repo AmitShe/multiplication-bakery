@@ -386,23 +386,61 @@ progress::-moz-progress-bar {
   text-align: center;
   display: grid;
   justify-items: center;
-  padding: 16px 4px;
+  padding: 9px 4px 15px;
 }
 
-.seal {
-  display: grid;
-  place-items: center;
-  width: 62px;
+.ready-illustration {
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 272px);
+  padding: 9px 16px 0;
+}
+
+.ready-illustration::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 3% 2% 1%;
+  background: radial-gradient(ellipse, #fae7bb 0, #f7e2ec 50%, transparent 72%);
+}
+
+.ready-illustration img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 8px 6px #72435830);
+  animation: tray-arrive .72s cubic-bezier(.2,.72,.22,1) both;
+}
+
+.tray-spark {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  width: var(--size);
   aspect-ratio: 1;
-  background: #f5d9ed;
-  border: 3px solid #f1c0e2;
-  border-radius: 50%;
-  font-size: 2.45rem;
-  color: #922f8e;
+  background: var(--color);
+  clip-path: polygon(50% 0,64% 36%,100% 50%,64% 64%,50% 100%,36% 64%,0 50%,36% 36%);
+  animation: tray-twinkle .75s ease-out var(--delay) both;
+}
+
+.tray-spark:nth-of-type(1) { --x: 5%; --y: 29%; --size: 18px; --color: #ba65a6; --delay: .28s; }
+.tray-spark:nth-of-type(2) { --x: 84%; --y: 16%; --size: 22px; --color: #e0a64f; --delay: .39s; }
+.tray-spark:nth-of-type(3) { --x: 91%; --y: 44%; --size: 12px; --color: #bc75c0; --delay: .55s; }
+
+@keyframes tray-arrive {
+  0% { opacity: 0; transform: translateY(20px) scale(.87) rotate(-5deg); }
+  72% { opacity: 1; transform: translateY(-4px) scale(1.03) rotate(1deg); }
+  100% { transform: none; }
+}
+
+@keyframes tray-twinkle {
+  0% { opacity: 0; transform: scale(.25) rotate(-18deg); }
+  40% { opacity: 1; transform: scale(1.23) rotate(6deg); }
+  100% { opacity: .65; transform: none; }
 }
 
 .ready h3 {
-  margin: 12px 0 3px;
+  margin: 9px 0 3px;
   font-size: 1.6rem;
 }
 
@@ -437,6 +475,9 @@ progress::-moz-progress-bar {
 @media (prefers-reduced-motion:reduce) {
   * {
     animation-duration: .01ms!important;
+  }
+  .ready-illustration img,.tray-spark {
+    animation: none;
   }
 }
 

@@ -10,8 +10,8 @@
   <link rel="icon" href="assets/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" sizes="180x180">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=3">
-  <script type="module" src="game.js?v=3"></script>
+  <link rel="stylesheet" href="style.css?v=4">
+  <script type="module" src="game.js?v=4"></script>
 </head>
 <body>
   <main class="app">
@@ -50,7 +50,12 @@
         <p class="feedback" id="feedback" role="status"></p>
       </div>
       <div class="ready" id="ready" hidden>
-        <div class="seal" aria-hidden="true">✦</div>
+        <div class="ready-illustration">
+          <img src="assets/finished-tray.webp" alt="מגש לילך עם עוגיות טריות בצורת לב, כוכב ועוגיות שוקולד וריבה" width="589" height="340">
+          <span class="tray-spark" aria-hidden="true"></span>
+          <span class="tray-spark" aria-hidden="true"></span>
+          <span class="tray-spark" aria-hidden="true"></span>
+        </div>
         <h3>המגש מוכן!</h3>
         <p id="ready-text"></p>
         <button id="next" type="button">למגש הבא <span aria-hidden="true">←</span></button>

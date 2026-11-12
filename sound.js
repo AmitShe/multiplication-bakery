@@ -37,6 +37,23 @@ export function makeSound(button, storageKey) {
     source.stop(time + duration);
   }
 
+  function hintChime(time, opening) {
+    const notes = opening ? [523, 659] : [659, 523];
+    for (const [index, pitch] of notes.entries()) {
+      const start = time + index * .075;
+      const tone = audio.createOscillator();
+      const volume = audio.createGain();
+      tone.type = "sine";
+      tone.frequency.value = pitch;
+      volume.gain.setValueAtTime(.001, start);
+      volume.gain.linearRampToValueAtTime(index ? .022 : .031, start + .025);
+      volume.gain.exponentialRampToValueAtTime(.001, start + .19);
+      tone.connect(volume).connect(audio.destination);
+      tone.start(start);
+      tone.stop(start + .21);
+    }
+  }
+
   function play(cue, flavor = 0) {
     if (muted) return;
     const Audio = window.AudioContext || window.webkitAudioContext;
@@ -45,9 +62,8 @@ export function makeSound(button, storageKey) {
       audio ||= new Audio();
       if (audio.state === "suspended") audio.resume().catch(() => {});
       const time = audio.currentTime + .02;
-      if (cue === "paper") {
-        rustle(time, .15, .12, 1850);
-        rustle(time + .055, .07, .045, 3000);
+      if (cue === "hint-open" || cue === "hint-close") {
+        hintChime(time, cue === "hint-open");
       } else if (cue === "retry") {
         mallet(time, 245, .055, .11);
         rustle(time + .015, .10, .11, 920);

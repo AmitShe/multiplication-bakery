@@ -1,5 +1,5 @@
 import { makeFact, orderSize } from "./facts.js?v=2";
-import { makeSound } from "./sound.js?v=3";
+import { makeSound } from "./sound.js?v=4";
 
 const $ = id => document.getElementById(id);
 const key = "multiplication-bakery:progress";
@@ -142,8 +142,9 @@ function choose(value, button) {
 }
 
 hint.addEventListener("click", () => {
-  renderModel(model.hidden);
-  play("paper");
+  const opening = model.hidden;
+  renderModel(opening);
+  play(opening ? "hint-open" : "hint-close");
 });
 
 $("restart").addEventListener("click", () => {
