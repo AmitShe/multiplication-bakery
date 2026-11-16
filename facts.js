@@ -14,13 +14,14 @@ export function shuffle(values, random = Math.random) {
 }
 
 export function makeFact(level, solved, previous, mistakes, random = Math.random) {
+  const operation = solved % 3 === 1 ? "division" : "multiplication";
   const unlocked = tables.slice(0, level + 1);
   const focus = level <= 9 ? unlocked.at(-1) : null;
   const candidates = [];
   let weightSum = 0;
   for (const a of unlocked) {
     for (let b = 1; b <= Math.min(4 + level, 10); b++) {
-      const key = a + "x" + b;
+      const key = a + (operation === "division" ? "d" : "x") + b;
       if (key === previous) continue;
       weightSum += 1 + (a === focus ? 3 : 0) + Math.min(5, mistakes[key] || 0) * 2;
       candidates.push({ a, b, key, threshold: weightSum });
@@ -30,12 +31,15 @@ export function makeFact(level, solved, previous, mistakes, random = Math.random
   const pick = random() * weightSum;
   const fact = candidates.find(candidate => candidate.threshold > pick);
   let { a, b } = fact;
-  if (level >= 4 && random() < .44) [a, b] = [b, a];
-  const missing = level >= 6 && (solved + level) % (level >= 10 ? 2 : 3) === 0
-    ? (random() < .5 ? "a" : "b")
-    : "product";
+  if (operation === "multiplication" && level >= 4 && random() < .44) [a, b] = [b, a];
+  let missing = "product";
+  if (operation === "division") {
+    missing = "quotient";
+  } else if (level >= 6 && (solved + level) % (level >= 10 ? 2 : 3) === 0) {
+    missing = random() < .5 ? "a" : "b";
+  }
   const product = a * b;
-  const answer = missing === "a" ? a : missing === "b" ? b : product;
+  const answer = missing === "a" ? a : missing === "b" || missing === "quotient" ? b : product;
   const limit = missing === "product" ? 100 : 10;
   const near = missing === "product"
     ? [product-a, product+a, product-b, product+b, product-2, product+2, a+b]
@@ -50,5 +54,5 @@ export function makeFact(level, solved, previous, mistakes, random = Math.random
     if (options.size < 4 && answer - offset >= 1) options.add(answer - offset);
   }
 
-  return { a, b, key: fact.key, missing, answer, product, options: shuffle([...options], random) };
+  return { a, b, key: fact.key, operation, missing, answer, product, options: shuffle([...options], random) };
 }

@@ -1,4 +1,4 @@
-import { makeFact, orderSize } from "./facts.js?v=2";
+import { makeFact, orderSize } from "./facts.js?v=3";
 import { makeSound } from "./sound.js?v=4";
 
 const $ = id => document.getElementById(id);
@@ -61,7 +61,14 @@ function makeCookies() {
   const grid = document.createElement("div");
   grid.className = "cookie-grid";
   grid.style.setProperty("--columns", layout.id === "boxes" ? Math.min(5, fact.b) : fact.b);
-  grid.setAttribute("aria-hidden", "true");
+  const groupCount = fact.a === 1 ? "קבוצה אחת" : fact.a + " " + layout.groups;
+  if (fact.operation === "division") {
+    grid.setAttribute("role", "img");
+    const cookiesPerGroup = fact.b === 1 ? "עוגייה אחת" : fact.b + " עוגיות";
+    grid.setAttribute("aria-label", groupCount + ", " + cookiesPerGroup + " בכל " + layout.unit);
+  } else {
+    grid.setAttribute("aria-hidden", "true");
+  }
   for (let group = 0; group < fact.a; group++) {
     const row = document.createElement("div");
     row.className = "cookie-group";
@@ -77,9 +84,17 @@ function makeCookies() {
   }
   const caption = document.createElement("p");
   caption.className = "cookie-caption";
-  caption.textContent = fact.missing === "a" ? "ספרו כמה " + layout.groups + " יש."
-    : fact.missing === "b" ? "ספרו כמה עוגיות יש בכל " + layout.unit + "."
-    : fact.a + " " + layout.groups + ", " + fact.b + " עוגיות בכל " + layout.unit;
+  if (fact.operation === "division") {
+    const total = fact.product === 1 ? "עוגייה אחת" : fact.product + " עוגיות";
+    const arrangement = fact.a === 1 ? "שמים " + total + " בקבוצה אחת" : "מחלקים " + total + " ל־" + groupCount;
+    caption.textContent = arrangement + ". כמה עוגיות יש בכל " + layout.unit + "?";
+  } else if (fact.missing === "a") {
+    caption.textContent = "ספרו כמה " + layout.groups + " יש.";
+  } else if (fact.missing === "b") {
+    caption.textContent = "ספרו כמה עוגיות יש בכל " + layout.unit + ".";
+  } else {
+    caption.textContent = fact.a + " " + layout.groups + ", " + fact.b + " עוגיות בכל " + layout.unit;
+  }
   model.replaceChildren(label, grid, caption);
 }
 
@@ -90,8 +105,9 @@ function newOrder() {
   flavor = (level - 1 + solved) % recipes.length;
   workbench.dataset.flavor = recipes[flavor];
   feedback.textContent = "";
-  const equation = [fact.missing === "a" ? "?" : fact.a, "×", fact.missing === "b" ? "?" : fact.b,
-    "=", fact.missing === "product" ? "?" : fact.product];
+  const equation = fact.operation === "division" ? [fact.product, "÷", fact.a, "=", "?"]
+    : [fact.missing === "a" ? "?" : fact.a, "×", fact.missing === "b" ? "?" : fact.b,
+      "=", fact.missing === "product" ? "?" : fact.product];
   $("problem").textContent = equation.join(" ");
   makeCookies();
   renderModel(false);
@@ -124,7 +140,9 @@ function choose(value, button) {
   progress();
   button.classList.add("correct");
   for (const option of choices.children) option.setAttribute("aria-disabled", "true");
-  feedback.textContent = "נכון! " + fact.a + " כפול " + fact.b + " שווה " + fact.product;
+  feedback.textContent = fact.operation === "division"
+    ? "נכון! " + fact.product + " לחלק ל־" + fact.a + " שווה " + fact.b
+    : "נכון! " + fact.a + " כפול " + fact.b + " שווה " + fact.product;
   const complete = solved === orderSize(level);
   play(complete ? "ready" : "correct", flavor);
   save(complete ? level + 1 : level);
