@@ -38,7 +38,7 @@ body {
   padding: max(13px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));
 }
 
-button,a {
+button,a,summary {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
@@ -362,10 +362,33 @@ progress::-moz-progress-bar {
 }
 
 .choice.wrong {
-  background: #ffe1e3;
-  border-color: #efa6b7;
-  color: #742b50;
-  box-shadow: 0 3px 0 #f0b9c6;
+  position: relative;
+  background: #ffddde;
+  border: 2px solid #b83e54;
+  color: #762333;
+  box-shadow: 0 3px 0 #ca6171;
+}
+
+.wrong-mark {
+  position: absolute;
+  inset-inline-end: 9px;
+  inset-block-start: calc(50% - 12px);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #a72e46;
+  color: white;
+  font-size: 1.2rem;
+  line-height: 1;
+  animation: wrong-mark-in .2s ease-out;
+}
+
+@keyframes wrong-mark-in {
+  from { transform: scale(.65); }
+  70% { transform: scale(1.12); }
+  to { transform: scale(1); }
 }
 
 .choice[aria-disabled="true"] {
@@ -373,8 +396,10 @@ progress::-moz-progress-bar {
 }
 
 .feedback {
-  min-height: 1.3em;
-  margin: 12px 0 0;
+  min-height: calc(1.3em + 10px);
+  margin: 11px 0 0;
+  padding: 5px 8px;
+  border-radius: 10px;
   text-align: center;
   font-size: .84rem;
   line-height: 1.3;
@@ -382,17 +407,23 @@ progress::-moz-progress-bar {
   color: #64306e;
 }
 
+.feedback.retry {
+  background: #fff0ef;
+  color: #842331;
+}
+
 .ready {
   text-align: center;
   display: grid;
   justify-items: center;
-  padding: 9px 4px 15px;
+  gap: 10px;
+  padding: 3px 0 10px;
 }
 
 .ready-illustration {
   position: relative;
   isolation: isolate;
-  width: min(100%, 272px);
+  width: min(100%, 250px);
   padding: 9px 16px 0;
 }
 
@@ -440,13 +471,136 @@ progress::-moz-progress-bar {
 }
 
 .ready h3 {
-  margin: 9px 0 3px;
+  margin: 0;
   font-size: 1.6rem;
 }
 
-.ready p {
-  margin: 0 0 12px;
+.tray-totals {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+}
+
+.tray-total {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  padding: 8px 5px;
+  border: 1px solid #cbe4c9;
+  border-radius: 14px;
+  background: #edf7ea;
+  color: #245133;
+}
+
+.tray-total.total-wrong {
+  border-color: #efcfd2;
+  background: #fff0ef;
+  color: #842331;
+}
+
+.tray-total dt {
+  font-size: .84rem;
+  font-weight: 650;
+}
+
+.tray-total dd {
+  margin: 0;
+  font-size: 1.54rem;
+  font-weight: 820;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.review-note {
+  margin: 0;
   color: #684b71;
+  font-size: .8rem;
+}
+
+.review {
+  width: 100%;
+  text-align: start;
+  border: 1px solid var(--edge);
+  border-radius: 14px;
+  background: #fff8fc;
+}
+
+.review summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: inherit;
+  list-style: none;
+  color: var(--berry);
+  font-size: .92rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.review summary::-webkit-details-marker { display: none; }
+
+.review summary::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.review[open] summary::after { transform: translateY(2px) rotate(225deg); }
+
+.review-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0 8px 8px;
+  list-style: none;
+}
+
+.review-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 7px 10px;
+  padding: 10px;
+  border: 1px solid #efe3ec;
+  border-radius: 10px;
+  background: #fffdfa;
+}
+
+.review-equation {
+  white-space: nowrap;
+  font-size: 1.08rem;
+  font-weight: 680;
+}
+
+.review-equation strong {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #e3f2df;
+  color: #245133;
+}
+
+.review-outcome {
+  color: #316743;
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.review-outcome.after-retry { color: #865020; }
+
+.review-attempts {
+  flex-basis: 100%;
+  color: #842331;
+  font-size: .82rem;
+  font-weight: 650;
 }
 
 .ready button {

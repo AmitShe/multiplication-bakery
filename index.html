@@ -10,8 +10,8 @@
   <link rel="icon" href="assets/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" sizes="180x180">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=4">
-  <script type="module" src="game.js?v=6"></script>
+  <link rel="stylesheet" href="style.css?v=5">
+  <script type="module" src="game.js?v=7"></script>
 </head>
 <body>
   <main class="app">
@@ -56,8 +56,22 @@
           <span class="tray-spark" aria-hidden="true"></span>
           <span class="tray-spark" aria-hidden="true"></span>
         </div>
-        <h3>המגש מוכן!</h3>
-        <p id="ready-text"></p>
+        <h3 id="ready-title" tabindex="-1">המגש מוכן!</h3>
+        <dl class="tray-totals" aria-label="סיכום המגש">
+          <div class="tray-total total-correct">
+            <dt>תשובות נכונות</dt>
+            <dd id="correct-total"></dd>
+          </div>
+          <div class="tray-total total-wrong">
+            <dt>תשובות שגויות</dt>
+            <dd id="wrong-total"></dd>
+          </div>
+        </dl>
+        <p class="review-note" id="review-note" hidden>הטעויות והפירוט כוללים את התרגילים ששוחקו מאז העדכון.</p>
+        <details class="review" id="review">
+          <summary>לעבור על התרגילים</summary>
+          <ol class="review-list" id="review-list" role="list"></ol>
+        </details>
         <button id="next" type="button">למגש הבא <span aria-hidden="true">←</span></button>
       </div>
     </section>

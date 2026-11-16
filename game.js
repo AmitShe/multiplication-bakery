@@ -6,8 +6,12 @@ const key = "multiplication-bakery:progress";
 const play = makeSound($("sound"), "multiplication-bakery:muted");
 const hint = $("hint");
 const model = $("model");
+const problem = $("problem");
 const choices = $("choices");
 const feedback = $("feedback");
+const order = $("order");
+const ready = $("ready");
+const review = $("review");
 const workbench = document.querySelector(".workbench");
 const reset = $("reset-dialog");
 const recipes = ["chip", "lemon", "berry", "jam"];
@@ -21,18 +25,21 @@ let saved = {};
 try { saved = JSON.parse(localStorage.getItem(key)) || {}; } catch {}
 let level = Number.isSafeInteger(saved.level) && saved.level >= 1 ? saved.level : 1;
 const mistakes = Object.assign(Object.create(null), saved.mistakes);
-let solved = Number.isSafeInteger(saved.solved) && saved.solved >= 0 && saved.solved < orderSize(level)
+let solved = Number.isSafeInteger(saved.solved) && saved.solved >= 0 && saved.solved <= orderSize(level)
   ? saved.solved
   : 0;
+const results = Array.isArray(saved.results) ? saved.results : [];
 let previous;
 let fact;
+let wrongAnswers = [];
 let locked = false;
 let advanceTimer;
 let flavor = 0;
 
-function save(next = level) {
+function save() {
+  const retry = !locked && wrongAnswers.length ? { fact, wrongAnswers } : undefined;
   try {
-    localStorage.setItem(key, JSON.stringify({ level: next, solved: next === level ? solved : 0, mistakes }));
+    localStorage.setItem(key, JSON.stringify({ level, solved, mistakes, results, retry }));
   } catch {}
 }
 
@@ -98,17 +105,35 @@ function makeCookies() {
   model.replaceChildren(label, grid, caption);
 }
 
-function newOrder() {
-  fact = makeFact(level, solved, previous, mistakes);
+function markWrong(value, button) {
+  button.classList.add("wrong");
+  button.setAttribute("aria-disabled", "true");
+  button.setAttribute("aria-label", `${value}, תשובה שגויה`);
+  const mark = document.createElement("span");
+  mark.className = "wrong-mark";
+  mark.setAttribute("aria-hidden", "true");
+  mark.textContent = "×";
+  button.append(mark);
+}
+
+function showRetry(value) {
+  feedback.classList.add("retry");
+  feedback.textContent = `התשובה ${value} שגויה. נסו תשובה אחרת.`;
+}
+
+function newOrder(retry) {
+  fact = retry?.fact ?? makeFact(level, solved, previous, mistakes);
+  wrongAnswers = retry?.wrongAnswers ?? [];
   previous = fact.key;
   locked = false;
   flavor = (level - 1 + solved) % recipes.length;
   workbench.dataset.flavor = recipes[flavor];
+  feedback.classList.remove("retry");
   feedback.textContent = "";
   const equation = fact.operation === "division" ? [fact.product, "÷", fact.a, "=", "?"]
     : [fact.missing === "a" ? "?" : fact.a, "×", fact.missing === "b" ? "?" : fact.b,
       "=", fact.missing === "product" ? "?" : fact.product];
-  $("problem").textContent = equation.join(" ");
+  problem.textContent = equation.join(" ");
   makeCookies();
   renderModel(false);
   choices.replaceChildren(...fact.options.map(value => {
@@ -116,19 +141,59 @@ function newOrder() {
     button.type = "button";
     button.className = "choice";
     button.textContent = value;
+    if (wrongAnswers.includes(value)) markWrong(value, button);
     button.addEventListener("click", () => choose(value, button));
     return button;
   }));
+  if (wrongAnswers.length) showRetry(wrongAnswers.at(-1));
+}
+
+function showResults() {
+  let wrongTotal = 0;
+  const items = document.createDocumentFragment();
+  for (const { question, answer, wrongAnswers } of results) {
+    wrongTotal += wrongAnswers.length;
+    const item = document.createElement("li");
+    const equation = document.createElement("bdi");
+    equation.dir = "ltr";
+    equation.className = "review-equation";
+    const [before, after] = question.split("?");
+    const solution = document.createElement("strong");
+    solution.textContent = answer;
+    equation.append(before, solution, after);
+
+    const outcome = document.createElement("span");
+    outcome.className = wrongAnswers.length ? "review-outcome after-retry" : "review-outcome";
+    outcome.textContent = wrongAnswers.length ? "נכון אחרי תיקון" : "נכון בניסיון הראשון";
+    item.append(equation, outcome);
+    if (wrongAnswers.length) {
+      const attempts = document.createElement("span");
+      attempts.className = "review-attempts";
+      const numbers = document.createElement("bdi");
+      numbers.dir = "ltr";
+      numbers.textContent = wrongAnswers.join(", ");
+      attempts.append("תשובות שגויות ", numbers);
+      item.append(attempts);
+    }
+    items.append(item);
+  }
+  $("correct-total").textContent = solved;
+  $("wrong-total").textContent = wrongTotal;
+  $("review-note").hidden = results.length === solved;
+  $("review-list").replaceChildren(items);
+  review.open = false;
+  order.hidden = true;
+  ready.hidden = false;
 }
 
 function choose(value, button) {
   if (locked || button.classList.contains("wrong")) return;
   if (value !== fact.answer) {
     mistakes[fact.key] = Math.min(5, (mistakes[fact.key] || 0) + 1);
+    wrongAnswers.push(value);
     save();
-    button.classList.add("wrong");
-    button.setAttribute("aria-disabled", "true");
-    feedback.textContent = "נסו תשובה אחרת. העוגיות יכולות לעזור.";
+    markWrong(value, button);
+    showRetry(value);
     play("retry");
     return;
   }
@@ -136,27 +201,37 @@ function choose(value, button) {
   locked = true;
   const focused = document.activeElement === button;
   if (mistakes[fact.key]) mistakes[fact.key]--;
+  results.push({ question: problem.textContent, answer: value, wrongAnswers });
   solved++;
   progress();
   button.classList.add("correct");
   for (const option of choices.children) option.setAttribute("aria-disabled", "true");
+  feedback.classList.remove("retry");
   feedback.textContent = fact.operation === "division"
     ? "נכון! " + fact.product + " לחלק ל־" + fact.a + " שווה " + fact.b
     : "נכון! " + fact.a + " כפול " + fact.b + " שווה " + fact.product;
   const complete = solved === orderSize(level);
   play(complete ? "ready" : "correct", flavor);
-  save(complete ? level + 1 : level);
+  save();
   advanceTimer = setTimeout(() => {
     if (complete) {
-      $("order").hidden = true;
-      $("ready").hidden = false;
-      $("ready-text").textContent = "המגש הבא מחכה עם " + orderSize(level + 1) + " תרגילים.";
-      if (focused) $("next").focus({ preventScroll: true });
+      showResults();
+      if (focused) $("ready-title").focus({ preventScroll: true });
     } else {
       newOrder();
       if (focused) choices.firstElementChild.focus({ preventScroll: true });
     }
   }, 620);
+}
+
+function startTray() {
+  solved = 0;
+  results.length = 0;
+  ready.hidden = true;
+  order.hidden = false;
+  progress();
+  newOrder();
+  save();
 }
 
 hint.addEventListener("click", () => {
@@ -173,23 +248,20 @@ reset.addEventListener("close", () => {
   if (reset.returnValue !== "restart") return;
   clearTimeout(advanceTimer);
   level = 1;
-  solved = 0;
   previous = undefined;
   for (const key of Object.keys(mistakes)) delete mistakes[key];
-  save();
-  $("ready").hidden = true;
-  $("order").hidden = false;
-  progress();
-  newOrder();
+  startTray();
 });
 $("next").addEventListener("click", () => {
   level++;
-  solved = 0;
-  $("ready").hidden = true;
-  $("order").hidden = false;
-  progress();
-  newOrder();
+  startTray();
   choices.firstElementChild.focus({ preventScroll: true });
 });
 progress();
-newOrder();
+if (solved === orderSize(level)) {
+  showResults();
+} else {
+  const retry = saved.retry;
+  const canResume = Array.isArray(retry?.fact?.options) && Array.isArray(retry?.wrongAnswers);
+  newOrder(canResume ? retry : undefined);
+}
